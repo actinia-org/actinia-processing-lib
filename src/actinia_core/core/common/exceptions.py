@@ -4,7 +4,7 @@
 # performance processing of geographical data that uses GRASS GIS for
 # computational tasks. For details, see https://actinia.mundialis.de/
 #
-# Copyright (c) 2016-2018 Sören Gebbert and mundialis GmbH & Co. KG
+# Copyright (c) 2016-2025 Sören Gebbert and mundialis GmbH & Co. KG
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ related to the Actinia Core functionality
 __license__ = "GPLv3"
 __author__ = "Sören Gebbert"
 __copyright__ = (
-    "Copyright 2016-2018, Sören Gebbert and mundialis GmbH & Co. KG"
+    "Copyright 2016-2025, Sören Gebbert and mundialis GmbH & Co. KG"
 )
 __maintainer__ = "mundialis GmbH & Co. KG"
 __email__ = "info@mundialis.de"
@@ -45,12 +45,12 @@ class AsyncProcessError(Exception):
         Exception.__init__(self, message)
 
 
-class RsyncError(Exception):
-    """Raise this exception in case the rsync of the interim result fails"""
+# class RsyncError(Exception):
+#     """Raise this exception in case the rsync of the interim result fails"""
 
-    def __init__(self, message):
-        message = "%s:  %s" % (str(self.__class__.__name__), message)
-        Exception.__init__(self, message)
+#     def __init__(self, message):
+#         message = "%s:  %s" % (str(self.__class__.__name__), message)
+#         Exception.__init__(self, message)
 
 
 class AsyncProcessTermination(Exception):
@@ -72,19 +72,19 @@ class AsyncProcessTimeLimit(Exception):
         Exception.__init__(self, message)
 
 
-class GoogleCloudAPIError(Exception):
-    """Raise this exception in case something went wrong in
-    when accessing the google API
-    """
+# class GoogleCloudAPIError(Exception):
+#     """Raise this exception in case something went wrong in
+#     when accessing the google API
+#     """
 
-    def __init__(self, message):
-        message = "%s:  %s" % (str(self.__class__.__name__), message)
-        Exception.__init__(self, message)
+#     def __init__(self, message):
+#         message = "%s:  %s" % (str(self.__class__.__name__), message)
+#         Exception.__init__(self, message)
 
 
-class SecurityError(Exception):
-    """Raise this exception in case some security problem occurs"""
+# class SecurityError(Exception):
+#     """Raise this exception in case some security problem occurs"""
 
-    def __init__(self, message):
-        message = "%s:  %s" % (str(self.__class__.__name__), message)
-        Exception.__init__(self, message)
+#     def __init__(self, message):
+#         message = "%s:  %s" % (str(self.__class__.__name__), message)
+#         Exception.__init__(self, message)
