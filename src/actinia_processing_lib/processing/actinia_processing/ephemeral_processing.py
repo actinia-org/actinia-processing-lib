@@ -51,12 +51,7 @@ from actinia_core.core.common.process_chain import (
     get_param_stdin_part,
     ProcessChainConverter,
 )
-from actinia_core.core.common.exceptions import (
-    AsyncProcessError,
-    AsyncProcessTermination,
-    RsyncError,
-)
-from actinia_core.core.common.exceptions import AsyncProcessTimeLimit
+from actinia_core.core.common.exceptions import RsyncError
 from actinia_core.models.response_models import (
     ProcessingResponseModel,
     ExceptionTracebackModel,
@@ -69,6 +64,12 @@ from actinia_core.models.response_models import (
 from actinia_core.core.interim_results import InterimResult, get_directory_size
 from actinia_core.rest.base.user_auth import (
     check_project_mapset_module_access,
+)
+
+from actinia_processing_lib.core.common.exceptions import (
+    AsyncProcessError,
+    AsyncProcessTermination,
+    AsyncProcessTimeLimit,
 )
 
 __license__ = "GPLv3"

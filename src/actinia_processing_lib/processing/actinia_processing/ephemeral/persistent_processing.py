@@ -29,11 +29,12 @@ import os
 import shutil
 import subprocess
 
-from actinia_core.processing.actinia_processing.ephemeral_processing import (
+from actinia_processing_lib.processing.actinia_processing.ephemeral_processing import (
     EphemeralProcessing,
 )
-from actinia_core.core.common.exceptions import AsyncProcessError
 from actinia_core.core.mapset_merge_utils import change_mapsetname
+
+from actinia_processing_lib.core.common.exceptions import AsyncProcessError
 
 __license__ = "GPLv3"
 __author__ = "Sören Gebbert, Guido Riembauer, Anika Weinmann, Lina Krisztian"
