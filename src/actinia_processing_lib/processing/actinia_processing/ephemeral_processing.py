@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #######
 # actinia-core - an open source REST API for scalable, distributed, high
 # performance processing of geographical data that uses GRASS GIS for
@@ -21,14 +20,12 @@
 #
 #######
 
-"""
-Base class for asynchronous processing
+"""Base class for asynchronous processing
 """
 
 import math
 import os
 import pickle
-import requests
 import shutil
 import subprocess
 import sys
@@ -37,34 +34,32 @@ import time
 import traceback
 import uuid
 
-from flask import json
-from requests.auth import HTTPBasicAuth
-
-from actinia_core.core.common.config import global_config, DEFAULT_CONFIG_PATH
+import requests
+from actinia_core.core.common.config import DEFAULT_CONFIG_PATH, global_config
+from actinia_core.core.common.exceptions import RsyncError
+from actinia_core.core.common.process_chain import (
+    ProcessChainConverter,
+    get_param_stdin_part,
+)
 from actinia_core.core.common.process_object import Process
 from actinia_core.core.grass_init import GrassInitializer
-from actinia_core.core.messages_logger import MessageLogger
+from actinia_core.core.interim_results import InterimResult, get_directory_size
 from actinia_core.core.kvdb_lock import KvdbLockingInterface
-from actinia_core.core.resources_logger import ResourceLogger
 from actinia_core.core.mapset_merge_utils import change_mapsetname
-from actinia_core.core.common.process_chain import (
-    get_param_stdin_part,
-    ProcessChainConverter,
-)
-from actinia_core.core.common.exceptions import RsyncError
+from actinia_core.core.messages_logger import MessageLogger
+from actinia_core.core.resources_logger import ResourceLogger
 from actinia_core.models.response_models import (
-    ProcessingResponseModel,
     ExceptionTracebackModel,
-)
-from actinia_core.models.response_models import (
-    create_response_from_model,
+    ProcessingResponseModel,
     ProcessLogModel,
     ProgressInfoModel,
+    create_response_from_model,
 )
-from actinia_core.core.interim_results import InterimResult, get_directory_size
 from actinia_core.rest.base.user_auth import (
     check_project_mapset_module_access,
 )
+from flask import json
+from requests.auth import HTTPBasicAuth
 
 from actinia_processing_lib.core.common.exceptions import (
     AsyncProcessError,
@@ -80,7 +75,7 @@ __copyright__ = (
 __maintainer__ = "mundialis GmbH & Co. KG"
 
 
-class EphemeralProcessing(object):
+class EphemeralProcessing:
     """This class processes GRASS data on the local machine in a temporary
     mapset.
 
@@ -148,7 +143,7 @@ class EphemeralProcessing(object):
 
         self.rdc = rdc
         if os.path.exists(DEFAULT_CONFIG_PATH) is True and os.path.isfile(
-            DEFAULT_CONFIG_PATH
+            DEFAULT_CONFIG_PATH,
         ):
             self.config = global_config
             self.rdc.config = self.config
@@ -456,7 +451,6 @@ class EphemeralProcessing(object):
                           (no update) to activate the webhook call
 
         """
-
         self.resource_logger.commit(
             user_id=self.user_id,
             resource_id=self.resource_id,
@@ -482,7 +476,7 @@ class EphemeralProcessing(object):
             print(str(run_state))
             self.message_logger.error(
                 "Unable to send webhook request. Traceback: %s"
-                % str(run_state)
+                % str(run_state),
             )
 
     def _post_to_webhook(self, document, type):
@@ -494,10 +488,11 @@ class EphemeralProcessing(object):
         Args:
             document (str): The response document
             type (str): The webhook type: 'finished' or 'update'
+
         """
         self.message_logger.info(
             "Send POST request to %s webhook url: %s"
-            % (type, self.webhook_finished)
+            % (type, self.webhook_finished),
         )
         webhook_url = None
         if type == "finished":
@@ -533,7 +528,7 @@ class EphemeralProcessing(object):
                         json=json.dumps(response_model),
                         timeout=10,
                     )
-                if not (500 <= resp.status_code and resp.status_code < 600):
+                if not (resp.status_code >= 500 and resp.status_code < 600):
                     webhook_not_reached = False
             except Exception:
                 time.sleep(webhook_sleep)
@@ -541,7 +536,7 @@ class EphemeralProcessing(object):
             webhook_not_reached is False and resp.status_code not in [200, 204]
         ) or webhook_not_reached is True:
             raise AsyncProcessError(
-                "Unable to access %s webhook URL %s" % (type, webhook_url)
+                "Unable to access %s webhook URL %s" % (type, webhook_url),
             )
 
     def _get_previous_iteration_process_chain(self):
@@ -552,6 +547,7 @@ class EphemeralProcessing(object):
             pc_step (int): The number of the step in the process chain where to
                            continue
            old_process_chain (dict): The process chain of the old resource run
+
         """
         # check old resource
         pc_step = 0
@@ -559,11 +555,14 @@ class EphemeralProcessing(object):
         for iter in range(1, self.rdc.iteration):
             if iter == 1:
                 old_response_data = self.resource_logger.get(
-                    self.user_id, self.resource_id
+                    self.user_id,
+                    self.resource_id,
                 )
             else:
                 old_response_data = self.resource_logger.get(
-                    self.user_id, self.resource_id, iter
+                    self.user_id,
+                    self.resource_id,
+                    iter,
                 )
             if old_response_data is None:
                 return None
@@ -583,8 +582,7 @@ class EphemeralProcessing(object):
         old_process_chain=None,
         pc_step=None,
     ):
-        """
-        Create the process list and check for user permissions.
+        """Create the process list and check for user permissions.
 
         The following permissions are checked:
 
@@ -608,11 +606,11 @@ class EphemeralProcessing(object):
 
         Returns: list:
             The process list
-        """
 
+        """
         if old_process_chain is not None:
             self.proc_chain_converter.process_chain_to_process_list(
-                old_process_chain
+                old_process_chain,
             )
             self.proc_chain_converter.import_descr_list = list()
             self.proc_chain_converter.resource_export_list = list()
@@ -621,14 +619,14 @@ class EphemeralProcessing(object):
         if process_chain is None:
             process_list = (
                 self.proc_chain_converter.process_chain_to_process_list(
-                    self.request_data
+                    self.request_data,
                 )
             )
             self.process_chain_list.append(self.request_data)
         else:
             process_list = (
                 self.proc_chain_converter.process_chain_to_process_list(
-                    process_chain
+                    process_chain,
                 )
             )
             self.process_chain_list.append(process_chain)
@@ -664,7 +662,7 @@ class EphemeralProcessing(object):
             raise AsyncProcessError(
                 "Process limit exceeded, a maximum of %i "
                 "processes are allowed in the process chain."
-                % self.process_num_limit
+                % self.process_num_limit,
             )
 
         # Check if the module description was correct and if the
@@ -685,7 +683,7 @@ class EphemeralProcessing(object):
                         if resp is not None:
                             raise AsyncProcessError(
                                 "Module or executable <%s> is not supported"
-                                % process.executable
+                                % process.executable,
                             )
             else:
                 message = (
@@ -739,8 +737,7 @@ class EphemeralProcessing(object):
         # The setup should only be executed once
         if self.setup_flag is True:
             return
-        else:
-            self.setup_flag = True
+        self.setup_flag = True
 
         # fluent sender for this subprocess
         fluent_sender = None
@@ -761,7 +758,8 @@ class EphemeralProcessing(object):
         ):
             kwargs["password"] = self.config.KVDB_SERVER_PW
         self.resource_logger = ResourceLogger(
-            **kwargs, fluent_sender=fluent_sender
+            **kwargs,
+            fluent_sender=fluent_sender,
         )
 
         self.message_logger = MessageLogger(
@@ -774,7 +772,7 @@ class EphemeralProcessing(object):
         self.lock_interface.connect(**kwargs)
         del kwargs
         self.process_time_limit = int(
-            self.user_credentials["permissions"]["process_time_limit"]
+            self.user_credentials["permissions"]["process_time_limit"],
         )
 
         # Check and create all required paths to global, user and temporary
@@ -797,23 +795,26 @@ class EphemeralProcessing(object):
     def _setup_paths(self):
         """Helper method to setup the paths"""
         self.cell_limit = int(
-            self.user_credentials["permissions"]["cell_limit"]
+            self.user_credentials["permissions"]["cell_limit"],
         )
         self.process_num_limit = int(
-            self.user_credentials["permissions"]["process_num_limit"]
+            self.user_credentials["permissions"]["process_num_limit"],
         )
         # Setup the required paths
         self.temp_grass_data_base = os.path.join(
-            self.grass_temp_database, self.temp_grass_data_base_name
+            self.grass_temp_database,
+            self.temp_grass_data_base_name,
         )
         self.temp_file_path = os.path.join(self.temp_grass_data_base, ".tmp")
 
         if self.project_name:
             self.temp_project_path = os.path.join(
-                self.temp_grass_data_base, self.project_name
+                self.temp_grass_data_base,
+                self.project_name,
             )
             self.global_project_path = os.path.join(
-                self.grass_data_base, self.project_name
+                self.grass_data_base,
+                self.project_name,
             )
             # Create the user database path if it does not exist
             if not os.path.exists(self.grass_user_data_base):
@@ -821,14 +822,16 @@ class EphemeralProcessing(object):
             # Create the user group specific path, if it does not exist and set
             # the grass user database path accordingly
             self.grass_user_data_base = os.path.join(
-                self.grass_user_data_base, self.user_group
+                self.grass_user_data_base,
+                self.user_group,
             )
             if not os.path.exists(self.grass_user_data_base):
                 os.mkdir(self.grass_user_data_base)
             # Create the user group specific project path, if it does not
             # exist
             self.user_project_path = os.path.join(
-                self.grass_user_data_base, self.project_name
+                self.grass_user_data_base,
+                self.project_name,
             )
             if not os.path.exists(self.user_project_path):
                 os.mkdir(self.user_project_path)
@@ -904,7 +907,7 @@ class EphemeralProcessing(object):
                             "Unable to link all required mapsets into "
                             "temporary project. Missing or un-accessible "
                             f"mapset <{mapset}> in project "
-                            f"<{self.project_name}>"
+                            f"<{self.project_name}>",
                         )
 
             # Link the original mapsets from global and user database into the
@@ -922,7 +925,7 @@ class EphemeralProcessing(object):
         except Exception as e:
             raise AsyncProcessError(
                 "Unable to create a temporary GIS database"
-                ", Exception: %s" % str(e)
+                ", Exception: %s" % str(e),
             )
 
     def _link_mapsets(self, mapsets, mapsets_to_link, check_all_mapsets):
@@ -937,6 +940,7 @@ class EphemeralProcessing(object):
         Returns:
             mapsets (list): List of mapsets in project
             mapsets_to_link (list): List of mapsets paths to link
+
         """
         # Global project mapset linking
         if self.is_global_database is True:
@@ -989,6 +993,7 @@ class EphemeralProcessing(object):
         Returns:
             mapsets (list): List of mapsets in project
             mapsets_to_link (list): List of mapsets paths to link
+
         """
         if os.path.isdir(project_path):
             if check_all_mapsets is True:
@@ -996,7 +1001,8 @@ class EphemeralProcessing(object):
             for mapset in mapsets:
                 mapset_path = os.path.join(project_path, mapset)
                 if os.path.isdir(mapset_path) and os.access(
-                    mapset_path, os.R_OK & os.X_OK
+                    mapset_path,
+                    os.R_OK & os.X_OK,
                 ):
                     # Check if a WIND file exists to be sure it is a mapset
                     if (
@@ -1022,7 +1028,7 @@ class EphemeralProcessing(object):
                     else:
                         raise AsyncProcessError(
                             "Invalid mapset <%s> in project <%s>"
-                            % (mapset, self.project_name)
+                            % (mapset, self.project_name),
                         )
         else:
             if global_db is True:
@@ -1035,7 +1041,9 @@ class EphemeralProcessing(object):
         return mapsets, mapsets_to_link
 
     def _create_grass_environment(
-        self, grass_data_base, mapset_name="PERMANENT"
+        self,
+        grass_data_base,
+        mapset_name="PERMANENT",
     ):
         """Sets up the GRASS environment to run modules
 
@@ -1050,7 +1058,7 @@ class EphemeralProcessing(object):
         """
         self.message_logger.info(
             "Initlialize GRASS grass_data_base: %s; project: %s; mapset: %s"
-            % (grass_data_base, self.project_name, mapset_name)
+            % (grass_data_base, self.project_name, mapset_name),
         )
 
         self.ginit = GrassInitializer(
@@ -1107,14 +1115,15 @@ class EphemeralProcessing(object):
 
         """
         self.temp_mapset_path = os.path.join(
-            self.temp_project_path, temp_mapset_name
+            self.temp_project_path,
+            temp_mapset_name,
         )
 
         # if interim_result_mapset is set copy the mapset from the interim
         # results
         if interim_result_mapset:
             self.message_logger.info(
-                "Rsync interim result mapset to temporary GRASS DB"
+                "Rsync interim result mapset to temporary GRASS DB",
             )
             # change mapset name for groups, raster VRTs and tgis
             for directory in ["group", "cell_misc", "tgis"]:
@@ -1125,31 +1134,34 @@ class EphemeralProcessing(object):
                     os.path.basename(self.temp_mapset_path),
                 )
             rsync_status = self.interim_result.rsync_mapsets(
-                interim_result_mapset, self.temp_mapset_path
+                interim_result_mapset,
+                self.temp_mapset_path,
             )
             if rsync_status != "success":
                 raise RsyncError(
                     "Error while rsyncing of interim results to new temporare "
-                    "mapset"
+                    "mapset",
                 )
             self.interim_result.rsync_additional_mapsets(
-                os.path.dirname(self.temp_mapset_path)
+                os.path.dirname(self.temp_mapset_path),
             )
         if interim_result_file_path:
             self.message_logger.info(
-                "Rsync interim result file path to temporary GRASS DB"
+                "Rsync interim result file path to temporary GRASS DB",
             )
             rsync_status = self.interim_result.rsync_mapsets(
-                interim_result_file_path, self.temp_file_path
+                interim_result_file_path,
+                self.temp_file_path,
             )
             if rsync_status != "success":
                 raise RsyncError(
                     "Error while rsyncing of interim temporary file path to "
-                    "new temporare file path"
+                    "new temporare file path",
                 )
 
         self.ginit.run_module(
-            "g.mapset", ["-c", "mapset=%s" % temp_mapset_name]
+            "g.mapset",
+            ["-c", "mapset=%s" % temp_mapset_name],
         )
 
         if self.required_mapsets:
@@ -1163,7 +1175,7 @@ class EphemeralProcessing(object):
 
             self.message_logger.info(
                 "Added the following mapsets to the mapset "
-                "search path: " + ",".join(self.required_mapsets)
+                "search path: " + ",".join(self.required_mapsets),
             )
 
         # Set the vector database connection to vector map specific databases
@@ -1183,7 +1195,8 @@ class EphemeralProcessing(object):
         # to the temporary mapset
         if source_mapset_name is not None and interim_result_mapset is None:
             source_mapset_path = os.path.join(
-                self.temp_project_path, source_mapset_name
+                self.temp_project_path,
+                source_mapset_name,
             )
             if os.path.exists(os.path.join(source_mapset_path, "WIND")):
                 shutil.copyfile(
@@ -1211,7 +1224,7 @@ class EphemeralProcessing(object):
                     os.remove(tmpfile)
                 except Exception as e:
                     self.message_logger.debug(
-                        f"Temporary file {tmpfile} can't be removed: {e}"
+                        f"Temporary file {tmpfile} can't be removed: {e}",
                     )
 
     def _check_pixellimit_rimport(self, process_executable_params):
@@ -1241,11 +1254,12 @@ class EphemeralProcessing(object):
         if extent_region:
             # first query region extents
             errorid, stdout_gregion, _ = self.ginit.run_module(
-                "g.region", ["-ug"]
+                "g.region",
+                ["-ug"],
             )
             if errorid != 0:
                 raise AsyncProcessError(
-                    "Unable to check the computational region size"
+                    "Unable to check the computational region size",
                 )
             # parse region extents for creation of vrt (-te flag from gdalbuildvrt)
             list_out_gregion = stdout_gregion.split("\n")
@@ -1267,7 +1281,8 @@ class EphemeralProcessing(object):
         # gdalinfo for created vrt
         gdalinfo_params = [vrt_out]
         errorid, stdout_gdalinfo, _ = self.ginit.run_module(
-            "/usr/bin/gdalinfo", gdalinfo_params
+            "/usr/bin/gdalinfo",
+            gdalinfo_params,
         )
         # parse "Size" output of gdalinfo
         rastersize_list = (
@@ -1287,7 +1302,8 @@ class EphemeralProcessing(object):
         if rimport_res and (rastersize < self.cell_limit):
             # determine estimated resolution
             errorid, _, stderr_estres = self.ginit.run_module(
-                "r.import", [vrt_out, "-e"]
+                "r.import",
+                [vrt_out, "-e"],
             )
             if "Estimated" in stderr_estres:
                 # if data in different projection get rest_est with output of r.import -e
@@ -1311,8 +1327,8 @@ class EphemeralProcessing(object):
                             x
                             for x in process_executable_params
                             if "resolution_value=" in x
-                        ][0].split("=")[1]
-                    )
+                        ][0].split("=")[1],
+                    ),
                 ] * 2
             elif resolution == "region":
                 # if already queried above reuse, otherwise execute g.region command
@@ -1327,12 +1343,12 @@ class EphemeralProcessing(object):
                 res_val_ns = float(
                     [x for x in stdout_gregion.split("\n") if "nsres=" in x][
                         0
-                    ].split("=")[1]
+                    ].split("=")[1],
                 )
                 res_val_ew = float(
                     [x for x in stdout_gregion.split("\n") if "ewres=" in x][
                         0
-                    ].split("=")[1]
+                    ].split("=")[1],
                 )
                 res_val = [res_val_ns, res_val_ew]
         if res_val:
@@ -1351,7 +1367,7 @@ class EphemeralProcessing(object):
         if rastersize > self.cell_limit:
             raise AsyncProcessError(
                 "Processing pixel limit exceeded for raster import. "
-                "Please set e.g. region smaller."
+                "Please set e.g. region smaller.",
             )
 
     def _check_reset_region(self):
@@ -1372,7 +1388,7 @@ class EphemeralProcessing(object):
 
         if errorid != 0:
             raise AsyncProcessError(
-                "Unable to check the computational region size"
+                "Unable to check the computational region size",
             )
 
         str_list = stdout_buff.split()
@@ -1409,17 +1425,18 @@ class EphemeralProcessing(object):
         ns_res = ns_res * fak
         ew_res = ew_res * fak
         errorid, stdout_buff, stderr_buff = self.ginit.run_module(
-            "g.region", ["nsres=%f" % ns_res, "ewres=%f" % ew_res, "-g"]
+            "g.region",
+            ["nsres=%f" % ns_res, "ewres=%f" % ew_res, "-g"],
         )
         self.message_logger.info(stdout_buff)
         if errorid != 0:
             raise AsyncProcessError(
                 "Unable to adjust the region settings to nsres: "
-                "%f ewres: %f error: %s" % (ns_res, ew_res, stderr_buff)
+                "%f ewres: %f error: %s" % (ns_res, ew_res, stderr_buff),
             )
         raise AsyncProcessError(
             "Region too large, set a coarser resolution to minimum nsres: "
-            "%f ewres: %f [num_cells: %d]" % (ns_res, ew_res, num_cells)
+            "%f ewres: %f [num_cells: %d]" % (ns_res, ew_res, num_cells),
         )
 
     def _increment_progress(self, num=1):
@@ -1427,6 +1444,7 @@ class EphemeralProcessing(object):
 
         Args:
             num (int): The number for which the progress should be increased
+
         """
         self.progress_steps += num
         self.progress["step"] = self.progress_steps
@@ -1436,6 +1454,7 @@ class EphemeralProcessing(object):
 
         Args:
             process: The actinia process
+
         """
         self.actinia_process_dict[process.id] = process
         self.actinia_process_list.append(process)
@@ -1446,15 +1465,19 @@ class EphemeralProcessing(object):
         Args:
             num: The number of processes to be added to the total number of
                  processes
+
         """
         self.number_of_processes += num
         self.progress["num_of_steps"] = self.number_of_processes
 
     def _wait_for_process(
-        self, module_name, module_parameter, proc, poll_time
+        self,
+        module_name,
+        module_parameter,
+        proc,
+        poll_time,
     ):
-        """
-        Wait for a specific process. Catch termination requests, process
+        """Wait for a specific process. Catch termination requests, process
         time limits and send updates to the user.
 
         Args:
@@ -1468,7 +1491,6 @@ class EphemeralProcessing(object):
             The run time in seconds
 
         """
-
         start_time = time.time()
 
         termination_check_count = 0
@@ -1476,56 +1498,56 @@ class EphemeralProcessing(object):
         while True:
             if proc.poll() is not None:
                 break
-            else:
-                # Sleep some time and update the resource status
-                time.sleep(poll_time)
-                termination_check_count += 1
-                update_check_count += 1
+            # Sleep some time and update the resource status
+            time.sleep(poll_time)
+            termination_check_count += 1
+            update_check_count += 1
 
-                # Check all 10 loops for termination
-                if termination_check_count == 10:
-                    termination_check_count = 0
-                    # check if the resource should be terminated
-                    # and kill the current process
-                    if (
-                        self.resource_logger.get_termination(
-                            self.user_id, self.resource_id, self.iteration
-                        )
-                        is True
-                    ):
-                        proc.kill()
-                        raise AsyncProcessTermination(
-                            "Process <%s> was terminated "
-                            "by user request" % module_name
-                        )
-
-                # Send all 100 loops a status update
-                if update_check_count == 100:
-                    update_check_count = 0
-                    # Check max runtime of process
-                    curr_time = time.time()
-                    if (curr_time - start_time) > self.process_time_limit:
-                        proc.kill()
-                        raise AsyncProcessTimeLimit(
-                            "Time (%i seconds) exceeded to run executable %s"
-                            % (self.process_time_limit, module_name)
-                        )
-                    # Reduce the length of the command line parameters for
-                    # lesser logging overhead
-                    mparams = str(module_parameter)
-                    if len(mparams) > 100:
-                        mparams = "%s ... %s" % (mparams[0:50], mparams[-50:])
-                    message = (
-                        f"Running executable {module_name} with parameters "
-                        f"{mparams} for {curr_time - start_time} seconds"
+            # Check all 10 loops for termination
+            if termination_check_count == 10:
+                termination_check_count = 0
+                # check if the resource should be terminated
+                # and kill the current process
+                if (
+                    self.resource_logger.get_termination(
+                        self.user_id,
+                        self.resource_id,
+                        self.iteration,
                     )
-                    self._send_resource_update(message)
+                    is True
+                ):
+                    proc.kill()
+                    raise AsyncProcessTermination(
+                        "Process <%s> was terminated "
+                        "by user request" % module_name,
+                    )
+
+            # Send all 100 loops a status update
+            if update_check_count == 100:
+                update_check_count = 0
+                # Check max runtime of process
+                curr_time = time.time()
+                if (curr_time - start_time) > self.process_time_limit:
+                    proc.kill()
+                    raise AsyncProcessTimeLimit(
+                        "Time (%i seconds) exceeded to run executable %s"
+                        % (self.process_time_limit, module_name),
+                    )
+                # Reduce the length of the command line parameters for
+                # lesser logging overhead
+                mparams = str(module_parameter)
+                if len(mparams) > 100:
+                    mparams = "%s ... %s" % (mparams[0:50], mparams[-50:])
+                message = (
+                    f"Running executable {module_name} with parameters "
+                    f"{mparams} for {curr_time - start_time} seconds"
+                )
+                self._send_resource_update(message)
 
         return time.time() - start_time
 
     def _run_process(self, process, poll_time=0.05):
-        """
-        Run a process actinia_core.core.common.process_object.Process) with
+        """Run a process actinia_core.core.common.process_object.Process) with
         options and send progress updates to the resource database.
 
         IMPORTANT: Use this method to run programs that are not GRASS modules.
@@ -1553,13 +1575,15 @@ class EphemeralProcessing(object):
         """
         if (
             self.resource_logger.get_termination(
-                self.user_id, self.resource_id, self.iteration
+                self.user_id,
+                self.resource_id,
+                self.iteration,
             )
             is True
         ):
             raise AsyncProcessTermination(
                 "Process <%s> was terminated by "
-                "user request" % process.executable
+                "user request" % process.executable,
             )
 
         return self._run_executable(process, poll_time)
@@ -1612,13 +1636,15 @@ class EphemeralProcessing(object):
         if self.process_count % 20 == 0:
             if (
                 self.resource_logger.get_termination(
-                    self.user_id, self.resource_id, self.iteration
+                    self.user_id,
+                    self.resource_id,
+                    self.iteration,
                 )
                 is True
             ):
                 raise AsyncProcessTermination(
                     "Process <%s> was terminated "
-                    "by user request" % process.executable
+                    "by user request" % process.executable,
                 )
 
             message = "Running module %s with parameters %s" % (
@@ -1674,13 +1700,16 @@ class EphemeralProcessing(object):
             (returncode, stdout_buff, stderr_buff)
 
         """
-
         # Use temporary files to catch stdout and stderr
         stdout_buff = tempfile.NamedTemporaryFile(
-            mode="w+b", delete=True, dir=self.temp_file_path
+            mode="w+b",
+            delete=True,
+            dir=self.temp_file_path,
         )
         stderr_buff = tempfile.NamedTemporaryFile(
-            mode="w+b", delete=True, dir=self.temp_file_path
+            mode="w+b",
+            delete=True,
+            dir=self.temp_file_path,
         )
         stdin_file = None
 
@@ -1699,7 +1728,7 @@ class EphemeralProcessing(object):
                             # filter stdout/stderr
                             if "::" in val_splitted[j]:
                                 filter = get_param_stdin_part(
-                                    val_splitted[j][2:]
+                                    val_splitted[j][2:],
                                 )
                                 if "=" not in par_val:
                                     raise AsyncProcessError(
@@ -1707,17 +1736,18 @@ class EphemeralProcessing(object):
                                         f"<{process.executable}>: <{filter}> "
                                         "cannot be selected. Maybe you have to "
                                         "set the '-g' flag for the stdout/stderr "
-                                        "module."
+                                        "module.",
                                     )
                                 filtered_par_value = {
                                     x.split("=")[0]: x.split("=")[1]
                                     for x in par_val.split()
                                 }[filter]
                                 filtered_func_name += f"::{filter}"
-                            process.executable_params[i] = (
-                                process.executable_params[i].replace(
-                                    filtered_func_name, filtered_par_value
-                                )
+                            process.executable_params[
+                                i
+                            ] = process.executable_params[i].replace(
+                                filtered_func_name,
+                                filtered_par_value,
                             )
 
         if process.stdin_source is not None:
@@ -1725,7 +1755,7 @@ class EphemeralProcessing(object):
             stdin_file = open(tmp_file, "w")
             stdin_file.write(process.stdin_source())
             stdin_file.close()
-            stdin_file = open(tmp_file, "r")
+            stdin_file = open(tmp_file)
 
         self._increment_progress(num=1)
 
@@ -1753,7 +1783,10 @@ class EphemeralProcessing(object):
             )
 
         run_time = self._wait_for_process(
-            process.executable, process.executable_params, proc, poll_time
+            process.executable,
+            process.executable_params,
+            proc,
+            poll_time,
         )
 
         proc.wait()
@@ -1793,7 +1826,7 @@ class EphemeralProcessing(object):
 
         if proc.returncode != 0:
             raise AsyncProcessError(
-                "Error while running executable <%s>" % process.executable
+                "Error while running executable <%s>" % process.executable,
             )
 
         # save interim results
@@ -1802,12 +1835,14 @@ class EphemeralProcessing(object):
             and self.temp_mapset_path is not None
         ):
             self.interim_result.save_interim_results(
-                self.progress_steps, self.temp_mapset_path, self.temp_file_path
+                self.progress_steps,
+                self.temp_mapset_path,
+                self.temp_file_path,
             )
         elif self.temp_mapset_path is None:
             self.message_logger.debug(
                 "No temp mapset path set. Because of that no interim results"
-                " can be saved!"
+                " can be saved!",
             )
 
         return proc.returncode, stdout_string, stderr_string
@@ -1839,8 +1874,8 @@ class EphemeralProcessing(object):
                                             temporary file path
         Raises:
             This method will raise an AsyncProcessError
-        """
 
+        """
         # Create the temp database and link the
         # required mapsets into it
         self._create_temp_database(self.required_mapsets)
@@ -1848,7 +1883,8 @@ class EphemeralProcessing(object):
         # Initialize the GRASS environment and switch into PERMANENT
         # mapset, which is always linked
         self._create_grass_environment(
-            grass_data_base=self.temp_grass_data_base, mapset_name="PERMANENT"
+            grass_data_base=self.temp_grass_data_base,
+            mapset_name="PERMANENT",
         )
 
         # Create the temporary mapset and switch into it
@@ -1885,12 +1921,12 @@ class EphemeralProcessing(object):
         # Create the process chain
         if self.rdc.iteration is not None:
             process_list = self._create_temporary_grass_environment_and_process_list_for_iteration(
-                skip_permission_check=skip_permission_check
+                skip_permission_check=skip_permission_check,
             )
         else:
             process_list = (
                 self._create_temporary_grass_environment_and_process_list(
-                    skip_permission_check=skip_permission_check
+                    skip_permission_check=skip_permission_check,
                 )
             )
 
@@ -1900,7 +1936,9 @@ class EphemeralProcessing(object):
         self._parse_module_outputs()
 
     def _create_temporary_grass_environment_and_process_list_for_iteration(
-        self, process_chain=None, skip_permission_check=False
+        self,
+        process_chain=None,
+        skip_permission_check=False,
     ):
         """Helper method to:
 
@@ -1945,7 +1983,8 @@ class EphemeralProcessing(object):
             interim_result_mapset,
             interim_result_file_path,
         ) = self.interim_result.check_interim_result_mapset(
-            pc_step, self.iteration - 1
+            pc_step,
+            self.iteration - 1,
         )
         if interim_result_mapset is None:
             return None
@@ -1959,7 +1998,9 @@ class EphemeralProcessing(object):
         return process_list
 
     def _create_temporary_grass_environment_and_process_list(
-        self, process_chain=None, skip_permission_check=False
+        self,
+        process_chain=None,
+        skip_permission_check=False,
     ):
         """Helper method to:
 
@@ -2007,7 +2048,6 @@ class EphemeralProcessing(object):
         provided id of the StdoutParser.
 
         """
-
         for entry in self.output_parser_list:
             for process_id, stdout_def in entry.items():
                 id = stdout_def["id"]
@@ -2015,7 +2055,7 @@ class EphemeralProcessing(object):
                 delimiter = stdout_def["delimiter"]
                 if process_id not in self.module_output_dict:
                     raise AsyncProcessError(
-                        "Unable to find process id in module output dictionary"
+                        "Unable to find process id in module output dictionary",
                     )
                 stdout = self.module_output_dict[process_id]["stdout"]
                 # Split the rows by the \n new line delimiter
@@ -2065,8 +2105,7 @@ class EphemeralProcessing(object):
                 self.module_results[id] = result
 
     def _execute_process_list(self, process_list):
-        """
-        Run all modules or executables that are specified in the process list
+        """Run all modules or executables that are specified in the process list
 
         Args:
             process_list: The process list that was generated by
@@ -2088,7 +2127,6 @@ class EphemeralProcessing(object):
 
     def _interim_results(self):
         """Check if interim results should be saved or cleaned up"""
-
         if (
             "error" in self.run_state
             and self.interim_result.saving_interim_results == "onError"
@@ -2133,7 +2171,6 @@ class EphemeralProcessing(object):
                        e_traceback)]
             message = pprint.pformat(message)
         """
-
         try:
             # Run the _execute function that does all the work
             self._execute()
@@ -2182,16 +2219,17 @@ class EphemeralProcessing(object):
             # After all processing finished, send the final status
             if "success" in self.run_state:
                 self._send_resource_finished(
-                    message=self.finish_message, results=self.module_results
+                    message=self.finish_message,
+                    results=self.module_results,
                 )
             elif "terminated" in self.run_state:
                 # Send an error message if an exception was raised
                 self._send_resource_terminated(
-                    message=self.run_state["terminated"]
+                    message=self.run_state["terminated"],
                 )
             elif "time limit exceeded" in self.run_state:
                 self._send_resource_time_limit_exceeded(
-                    message=self.run_state["time limit exceeded"]
+                    message=self.run_state["time limit exceeded"],
                 )
             elif "error" in self.run_state:
                 # Send an error message if an exception was raised

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #######
 # actinia-core - an open source REST API for scalable, distributed, high
 # performance processing of geographical data that uses GRASS GIS for
@@ -21,11 +20,10 @@
 #
 #######
 
-"""
-Utils for processing
-"""
+"""Utils for processing."""
 
 import importlib
+
 from actinia_core.core.common.config import global_config
 
 __license__ = "GPLv3"
@@ -54,11 +52,11 @@ def try_import(actinia_module, actinia_class):
 
     Returns:
         module: python module used for processing
+
     """
     try:
         imported_module = importlib.import_module(actinia_module, package=None)
-        imported_class = getattr(imported_module, actinia_class)
-        return imported_class
+        return getattr(imported_module, actinia_class)
     except ImportError as e:
         # ModuleNotFoundError is a subclass and caught here as well.
         if global_config.QUEUE_TYPE == "local":
@@ -66,4 +64,4 @@ def try_import(actinia_module, actinia_class):
                 " - No actinia_processing found but required "
                 + "for local queue!"
             )
-            raise e
+            raise
