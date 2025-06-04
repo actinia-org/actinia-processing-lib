@@ -61,7 +61,7 @@ from actinia_core.rest.base.user_auth import (
 from flask import json
 from requests.auth import HTTPBasicAuth
 
-from actinia_processing_lib.core.common.exceptions import (
+from actinia_processing_lib.exceptions import (
     AsyncProcessError,
     AsyncProcessTermination,
     AsyncProcessTimeLimit,
