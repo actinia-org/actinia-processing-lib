@@ -6,5 +6,5 @@
 exclude = .git,.pycache,build,.eggs
 
 per-file-ignores =
-    ./src/actinia_processing_lib/processing/actinia_processing/ephemeral_processing.py: E501
-    ./src/actinia_processing_lib/processing/actinia_processing/ephemeral/persistent_processing.py: E501
+    ./src/actinia_processing_lib/ephemeral_processing.py: E501
+    ./src/actinia_processing_lib/persistent_processing.py: E501

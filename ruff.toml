@@ -1,7 +1,36 @@
 lint.ignore = ["D104",]
 
 [lint.per-file-ignores]
-"src/actinia_processing_lib/processing/actinia_processing/ephemeral_processing.py" = [
+"src/actinia_processing_lib/ephemeral_processing_with_export.py" = [
+    "A001",
+    "A002",
+    "ANN001",
+    "ANN202",
+    "ANN204",
+    "ARG002",
+    "B006",
+    "COM812",
+    "D200",
+    "D202",
+    "D205",
+    "D212",
+    "D400",
+    "D401",
+    "D404",
+    "D415",
+    "FBT002",
+    "I001",
+    "PLC0415",
+    "PLR0912",
+    "PLR6201",
+    "PTH118",
+    "SIM102",
+    "SLF001",
+    "TRY003",
+    "UP009",
+    "UP031",
+]
+"src/actinia_processing_lib/ephemeral_processing.py" = [
     "A001",
     "A002",
     "ANN001",
@@ -70,7 +99,13 @@ lint.ignore = ["D104",]
     "TRY400",
     "UP031",
 ]
-"src/actinia_processing_lib/processing/actinia_processing/ephemeral/persistent_processing.py" = [
+"src/actinia_processing_lib/exceptions.py" = [
+    "ANN001",
+    "D107",
+    "D205",
+    "N818",
+]
+"src/actinia_processing_lib/persistent_processing.py" = [
     "ANN001",
     "ANN201",
     "ANN202",
@@ -98,6 +133,14 @@ lint.ignore = ["D104",]
     "TRY301",
     "UP031",
 ]
+"src/actinia_processing_lib/utils.py" = [
+    "ANN001",
+    "ANN201",
+    "D205",
+    "D401",
+    "D417",
+    "ISC003",
+]
 "tests/*" = [
     "PLR0913",
     "PLR0917",
@@ -105,18 +148,4 @@ lint.ignore = ["D104",]
     "PLW0603",
     "S107",
     "S606",
-]
-"src/actinia_processing_lib/core/common/exceptions.py" = [
-    "ANN001",
-    "D107",
-    "D205",
-    "N818",
-]
-"src/actinia_processing_lib/processing/common/utils.py" = [
-    "ANN001",
-    "ANN201",
-    "D205",
-    "D401",
-    "D417",
-    "ISC003",
 ]
