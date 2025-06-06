@@ -15,6 +15,10 @@ elif [ "$1" = "integrationtest" ]
 then
   pytest -m 'not unittest'
   TEST_RES=$?
+elif [ "$1" = "unittest" ]
+then
+  pytest -m 'unittest'
+  TEST_RES=$?
 else
   pytest
   TEST_RES=$?
