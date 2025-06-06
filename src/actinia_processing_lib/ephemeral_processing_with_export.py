@@ -428,6 +428,7 @@ class EphemeralProcessingWithExport(EphemeralProcessing):
                 output_path = None
 
                 # Legacy code
+                file_name = None
                 if "name" in resource:
                     file_name = resource["name"]
                 if "value" in resource:
