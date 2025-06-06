@@ -1,35 +1,26 @@
 #!/usr/bin/env sh
 
-# start kvdb server
+# start valkey server
 valkey-server &
 sleep 1
 valkey-cli ping
 
-# start webhook server
-webhook-server --host "0.0.0.0" --port "5005" &
-sleep 10
-
-# run tests
-echo "${ACTINIA_CUSTOM_TEST_CFG}"
-echo "${DEFAULT_CONFIG_PATH}"
-
+TEST_RES=1
 if [ "$1" = "dev" ]
 then
   echo "Executing only 'dev' tests ..."
-  pytest -m "dev"
+  pytest -m 'dev'
+  TEST_RES=$?
 elif [ "$1" = "integrationtest" ]
 then
-  pytest -m "integrationtest"
-elif [ "$1" = "unittest" ]
-then
-  pytest -m "unittest"
+  pytest -m 'not unittest'
+  TEST_RES=$?
 else
   pytest
+  TEST_RES=$?
 fi
 
-TEST_RES=$?
-
-# stop kvdb server
+# stop valkey server
 valkey-cli shutdown
 
 return $TEST_RES
