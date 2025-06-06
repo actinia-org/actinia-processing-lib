@@ -115,6 +115,7 @@ class EphemeralProcessingWithExport(EphemeralProcessing):
 
         if format == "COG":
             # check if GDAL has COG driver
+            # pylint: disable=import-outside-toplevel
             from osgeo import gdal
 
             driver_list = [

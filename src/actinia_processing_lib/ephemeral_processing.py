@@ -132,6 +132,7 @@ class EphemeralProcessing:
         """
         # Fluentd hack to work in a multiprocessing environment
         try:
+            # pylint: disable=import-outside-toplevel
             from fluent import sender
 
             if sender:
@@ -742,6 +743,7 @@ class EphemeralProcessing:
         # fluent sender for this subprocess
         fluent_sender = None
         if self.has_fluent is True:
+            # pylint: disable=import-outside-toplevel
             from fluent import sender
 
             fluent_sender = sender.FluentSender(
@@ -1714,6 +1716,7 @@ class EphemeralProcessing:
         stdin_file = None
 
         if process.param_stdin_sources:
+            # pylint: disable=consider-using-enumerate
             for num, func in process.param_stdin_sources.items():
                 func_name = f"PARAM_STDIN_FUNC_{num}"
                 for i in range(len(process.executable_params)):
