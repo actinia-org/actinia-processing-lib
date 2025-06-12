@@ -5,11 +5,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "actinia-processing-lib"
 version = "1.0.0"
-description = "An actinia-core plugin which adds example endpoints to actinia-core"
+description = "An actinia library for common processing functionality"
 readme = "README.md"
 authors = [
     { name = "Carmen Tawalika"},
     { name = "Anika Weinmann"},
+    { name = "Markus Neteler"},
+    { name = "Julia Haas"},
+    { name = "Lina Krisztian"},
 ]
 classifiers = [
     "License :: OSI Approved :: Apache Software License",
@@ -20,15 +23,14 @@ keywords = [
     "processing",
     "earth observation",
     "cloud-based processing",
-    "rest api",
     "gis",
     "grass gis",
     "osgeo",
     "example",
 ]
 dependencies = [
-    "colorlog>=4.2.1",
-    "xmltodict",
+    "flask",
+    "actinia-core",
 ]
 
 [project.optional-dependencies]
