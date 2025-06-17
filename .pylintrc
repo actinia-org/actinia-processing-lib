@@ -42,8 +42,9 @@ ignore-long-lines=.*COPYRIGHT:.* |# . description:.*|\s*(# )?.*http.:\/\/\S+?|# 
 # C0209: Formatting a regular string which could be an f-string (consider-using-f-string)
 # C0301: Line too long (already captured by other linters)
 # C0302: Too many lines in module (2241/800) (too-many-lines)
+# C0415: Import outside toplevel (osgeo.gdal) (import-outside-toplevel)
 # E0606 (possibly-used-before-assignment): to set options and flags at the bottom of the file without pre-initialization
-disable=C0209,C0301,C0302,E0606
+disable=C0209,C0301,C0302,C0415,E0606
 
 
 [VARIABLES]

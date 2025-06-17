@@ -392,9 +392,7 @@ class EphemeralProcessingWithExport(EphemeralProcessing):
         self._update_num_of_steps(1)
         self._run_process(p)
 
-        output_path = os.path.join(self.temp_file_path, output_file_name)
-
-        return output_path
+        return os.path.join(self.temp_file_path, output_file_name)
 
     def _export_resources(self, use_raster_region=False):
         """
