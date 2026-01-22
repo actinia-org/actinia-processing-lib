@@ -30,7 +30,7 @@ keywords = [
 ]
 dependencies = [
     "flask",
-    "actinia-core",
+    "actinia-core>=7.1.0",
 ]
 
 [project.optional-dependencies]

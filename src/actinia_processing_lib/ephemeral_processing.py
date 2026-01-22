@@ -33,6 +33,7 @@ import tempfile
 import time
 import traceback
 import uuid
+from datetime import datetime, timezone
 
 import requests
 from actinia_core.core.common.config import DEFAULT_CONFIG_PATH, global_config
@@ -186,6 +187,9 @@ class EphemeralProcessing:
         self.orig_time = self.rdc.orig_time
         self.orig_datetime = self.rdc.orig_datetime
 
+        self.start_time = None
+        self.start_datetime = None
+
         # Create the unique temporary gisdbase and mapset names
         self.unique_id = str(uuid.uuid4()).replace("-", "")
         self.temp_grass_data_base_name = "gisdbase_" + self.unique_id
@@ -313,6 +317,8 @@ class EphemeralProcessing:
             message=message,
             orig_time=self.orig_time,
             orig_datetime=self.orig_datetime,
+            start_timestamp=self.start_time,
+            start_datetime=self.start_datetime,
             http_code=200,
             status_url=self.status_url,
             api_info=self.api_info,
@@ -341,6 +347,8 @@ class EphemeralProcessing:
             message=message,
             orig_time=self.orig_time,
             orig_datetime=self.orig_datetime,
+            start_timestamp=self.start_time,
+            start_datetime=self.start_datetime,
             http_code=200,
             status_url=self.status_url,
             api_info=self.api_info,
@@ -371,6 +379,8 @@ class EphemeralProcessing:
             message=message,
             orig_time=self.orig_time,
             orig_datetime=self.orig_datetime,
+            start_timestamp=self.start_time,
+            start_datetime=self.start_datetime,
             http_code=200,
             status_url=self.status_url,
             api_info=self.api_info,
@@ -400,6 +410,8 @@ class EphemeralProcessing:
             message=message,
             orig_time=self.orig_time,
             orig_datetime=self.orig_datetime,
+            start_timestamp=self.start_time,
+            start_datetime=self.start_datetime,
             http_code=400,
             status_url=self.status_url,
             api_info=self.api_info,
@@ -429,6 +441,8 @@ class EphemeralProcessing:
             message=message,
             orig_time=self.orig_time,
             orig_datetime=self.orig_datetime,
+            start_timestamp=self.start_time,
+            start_datetime=self.start_datetime,
             http_code=400,
             status_url=self.status_url,
             api_info=self.api_info,
@@ -1494,6 +1508,12 @@ class EphemeralProcessing:
 
         """
         start_time = time.time()
+        self.start_time = start_time
+        self.start_datetime = str(
+            datetime.fromtimestamp(start_time, timezone.utc).replace(
+                tzinfo=None,
+            ),
+        )
 
         termination_check_count = 0
         update_check_count = 0
