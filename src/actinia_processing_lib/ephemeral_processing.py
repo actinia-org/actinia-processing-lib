@@ -34,7 +34,6 @@ import traceback
 import uuid
 from datetime import datetime, timezone
 
-import Path
 import requests
 from actinia_core.core.common.config import DEFAULT_CONFIG_PATH, global_config
 from actinia_core.core.common.exceptions import RsyncError
@@ -933,7 +932,7 @@ class EphemeralProcessing:
                     os.path.isdir(os.path.join(self.temp_project_path, mapset))
                     is False
                 ):
-                    Path.symlink_to(
+                    os.symlink(
                         mapset_path,
                         os.path.join(self.temp_project_path, mapset),
                     )
