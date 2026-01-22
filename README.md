@@ -6,7 +6,7 @@ It is a requirement of actinia-core and some actinia plugins and not meant to be
 
 
 ## DEV setup
-For a DEV setup integrated with other actinia components, see [here](https://github.com/actinia-org/actinia-docker#local-dev-setup-for-actinia-core-plugins-with-vscode).
+For a DEV setup integrated with other actinia components, see [documentation in actinia-docker repository](https://github.com/actinia-org/actinia-docker#local-dev-setup-for-actinia-core-plugins-with-vscode).
 
 
 ### Running tests
