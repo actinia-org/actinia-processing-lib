@@ -1507,12 +1507,13 @@ class EphemeralProcessing:
 
         """
         start_time = time.time()
-        self.start_time = start_time
-        self.start_datetime = str(
-            datetime.fromtimestamp(start_time, timezone.utc).replace(
-                tzinfo=None,
-            ),
-        )
+        if not self.start_time and not self.start_datetime:
+            self.start_time = start_time
+            self.start_datetime = str(
+                datetime.fromtimestamp(start_time, timezone.utc).replace(
+                    tzinfo=None,
+                ),
+            )
 
         termination_check_count = 0
         update_check_count = 0
