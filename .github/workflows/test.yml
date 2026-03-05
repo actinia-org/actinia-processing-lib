@@ -46,7 +46,7 @@ jobs:
         sed -i "s+# RUN make test+RUN make integrationtest+g" docker/actinia-processing-lib-test/Dockerfile
     - name: Integration tests of actinia-processing-lib
       id: docker_build
-      uses: docker/build-push-action@v6
+      uses: docker/build-push-action@v7
       with:
         push: false
         tags: actinia-processing-lib-test:alpine
@@ -96,7 +96,7 @@ jobs:
         sed -i "s+# RUN make test+RUN make integrationtest+g" docker/actinia-processing-lib-test/Dockerfile
     - name: Integration tests of actinia-processing-lib
       id: docker_build
-      uses: docker/build-push-action@v6
+      uses: docker/build-push-action@v7
       with:
         push: false
         tags: actinia-processing-lib-test:alpine
