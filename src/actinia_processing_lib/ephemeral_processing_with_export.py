@@ -34,9 +34,7 @@ from actinia_processing_lib.exceptions import AsyncProcessTermination
 
 __license__ = "GPLv3"
 __author__ = "Sören Gebbert, Anika Weinmann"
-__copyright__ = (
-    "Copyright 2016-2024, Sören Gebbert and mundialis GmbH & Co. KG"
-)
+__copyright__ = "Copyright 2016-2024, Sören Gebbert and mundialis GmbH & Co. KG"
 __maintainer__ = "mundialis GmbH & Co. KG"
 __email__ = "info@mundialis.de"
 
@@ -216,7 +214,11 @@ class EphemeralProcessingWithExport(EphemeralProcessing):
         return file_name, output_path
 
     def _export_vector(
-        self, vector_name, format="GPKG", additional_options=[]
+        self,
+        vector_name,
+        format="GPKG",
+        compressed="True",
+        additional_options=[],
     ):
         """
         Export a specific vector layer with v.out.ogr using a specific output
@@ -257,7 +259,7 @@ class EphemeralProcessingWithExport(EphemeralProcessing):
 
         # Remove a potential mapset
         file_name = vector_name.split("@")[0] + prefix
-        archive_name = file_name + ".zip"
+
         # switch into the temporary working directory to use relative path for
         # zip
         os.chdir(self.temp_file_path)
@@ -285,26 +287,39 @@ class EphemeralProcessingWithExport(EphemeralProcessing):
         self._update_num_of_steps(1)
         self._run_module(p)
 
-        # Compression
-        compressed_output_path = os.path.join(
-            self.temp_file_path, archive_name
-        )
+        # ESRI Shapefiles need to be compressed due to multiple files
+        if format == "ESRI_Shapefile" or compressed == "True":
 
-        executable = "/usr/bin/zip"
-        args = ["-r", archive_name, file_name]
+            archive_name = file_name + ".zip"
 
-        p = Process(
-            exec_type="exec",
-            executable=executable,
-            executable_params=args,
-            id=f"exporter_zip_{vector_name}",
-            stdin_source=None,
-        )
+            # Compression
+            compressed_output_path = os.path.join(
+                self.temp_file_path, archive_name
+            )
 
-        self._update_num_of_steps(1)
-        self._run_process(p)
+            executable = "/usr/bin/zip"
+            args = ["-r", archive_name, file_name]
 
-        return archive_name, compressed_output_path
+            p = Process(
+                exec_type="exec",
+                executable=executable,
+                executable_params=args,
+                id=f"exporter_zip_{vector_name}",
+                stdin_source=None,
+            )
+
+            self._update_num_of_steps(1)
+            self._run_process(p)
+
+            return archive_name, compressed_output_path
+
+        # all other formats are exported as single files and can be directly
+        # exported
+        else:
+            # Save the file in the temporary directory of the temporary gisdb
+            output_path = os.path.join(self.temp_file_path, file_name)
+
+            return file_name, output_path
 
     def _export_postgis(
         self, vector_name, dbstring, output_layer=None, additional_options=[]
@@ -470,9 +485,15 @@ class EphemeralProcessingWithExport(EphemeralProcessing):
                             resource["export"]["format"],
                         )
                         self._send_resource_update(message)
+                        # set compressed to True by defalt
                         _, output_path = self._export_vector(
                             vector_name=file_name,
                             format=resource["export"]["format"],
+                            compressed=(
+                                resource["export"]["compressed"]
+                                if "compressed" in resource["export"]
+                                else "True"
+                            ),
                         )
                 elif output_type == "file":
                     message = "Export file <%s> with format %s" % (
