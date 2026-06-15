@@ -235,6 +235,10 @@ class EphemeralProcessingWithExport(EphemeralProcessing):
             vector_name (str): The name of the raster layer
             format (str): GPKG (default), GML, GeoJSON, ESRI_Shapefile, SQLite,
                           CSV
+            compressed (str): Whether the output file should be compressed using
+                              zip. Default is True. For ESRI Shapefile the
+                              output will always be compressed, because of
+                              multiple files.
             additional_options (list): Unused
 
         Returns:
@@ -317,11 +321,11 @@ class EphemeralProcessingWithExport(EphemeralProcessing):
 
         # all other formats are exported as single files and can be directly
         # exported
-        else:
-            # Save the file in the temporary directory of the temporary gisdb
-            output_path = os.path.join(self.temp_file_path, file_name)
 
-            return file_name, output_path
+        # Save the file in the temporary directory of the temporary gisdb
+        output_path = os.path.join(self.temp_file_path, file_name)
+
+        return file_name, output_path
 
     def _export_postgis(
         self, vector_name, dbstring, output_layer=None, additional_options=[]
@@ -492,9 +496,7 @@ class EphemeralProcessingWithExport(EphemeralProcessing):
                             vector_name=file_name,
                             format=resource["export"]["format"],
                             compressed=(
-                                resource["export"]["compressed"]
-                                if "compressed" in resource["export"]
-                                else "True"
+                                resource["export"].get("compressed", "True")
                             ),
                         )
                 elif output_type == "file":
