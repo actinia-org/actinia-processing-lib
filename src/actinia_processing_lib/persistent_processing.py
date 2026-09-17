@@ -23,6 +23,7 @@
 """Asynchronous computation in specific temporary generated and then copied
 or original mapsets.
 """
+
 import os
 import shutil
 import subprocess
@@ -371,7 +372,7 @@ class PersistentProcessing(EphemeralProcessing):
                     stdout=stdout,
                     stderr=stderr,
                 )
-                (stdout_buff, stderr_buff) = p.communicate()
+                stdout_buff, stderr_buff = p.communicate()
                 if p.returncode != 0:
                     raise AsyncProcessError(
                         "Unable to merge mapsets. Error in linking:"
@@ -443,7 +444,7 @@ class PersistentProcessing(EphemeralProcessing):
                 stdout=stdout,
                 stderr=stderr,
             )
-            (stdout_buff, stderr_buff) = p.communicate()
+            stdout_buff, stderr_buff = p.communicate()
             if p.returncode != 0:
                 raise AsyncProcessError(
                     "Unable to copy temporary mapset to "

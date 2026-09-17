@@ -1,6 +1,9 @@
 lint.ignore = ["D104",]
 
 [lint.per-file-ignores]
+"src/actinia_processing_lib/__init__.py" = [
+    "RUF067",
+]
 "src/actinia_processing_lib/ephemeral_processing_with_export.py" = [
     "A001",
     "A002",

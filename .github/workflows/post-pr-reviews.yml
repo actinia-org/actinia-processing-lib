@@ -6,6 +6,9 @@ on:
     types:
       - completed
 
+# the workflow does not require permissions, but to avoid a code security warning this should be explicitly defined:
+permissions: {}
+
 jobs:
   post-pr-reviews:
     uses: mundialis/github-workflows/.github/workflows/post-pr-reviews.yml@main
