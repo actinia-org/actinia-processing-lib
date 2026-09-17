@@ -1199,8 +1199,10 @@ class EphemeralProcessing:
             # TODO GRASS GIS 9.0
             [
                 "driver=sqlite",
-                "database=$GISDBASE/$LOCATION_NAME/$MAPSET/vector/$MAP/"
-                "sqlite.db",
+                (
+                    "database=$GISDBASE/$LOCATION_NAME/$MAPSET/vector/$MAP/"
+                    "sqlite.db"
+                ),
             ],
         )
 
